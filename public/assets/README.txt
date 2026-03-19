@@ -1,0 +1,1 @@
+Podmieniaj placeholdery własnymi plikami.

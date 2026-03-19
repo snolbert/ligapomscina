@@ -1,0 +1,2 @@
+import { NewsCard } from "@/components/site/news-card"; import { SectionHeading } from "@/components/ui/section-heading"; import { getNews } from "@/lib/queries";
+export default async function Page() { const news = await getNews(); return <main className="mx-auto max-w-7xl space-y-8 px-4 py-10 md:px-6 md:py-16"><SectionHeading title="Aktualności" description="Wszystkie komunikaty ligi, zapowiedzi kolejek i podsumowania." /><div className="grid gap-6 lg:grid-cols-3">{news.map((entry: any) => <NewsCard key={entry.id} news={entry} />)}</div></main>; }

@@ -1,0 +1,10 @@
+"use client";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { signOutAdmin } from "@/lib/admin";
+import { LayoutDashboard, Trophy, CalendarDays, Swords, Newspaper, Users, Settings, BadgeHelp, GalleryHorizontal, LogOut } from "lucide-react";
+const links = [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard },{ href: "/admin/players", label: "Gracze", icon: Users },{ href: "/admin/seasons", label: "Sezony", icon: Trophy },{ href: "/admin/rounds", label: "Kolejki", icon: CalendarDays },{ href: "/admin/matches", label: "Mecze", icon: Swords },{ href: "/admin/news", label: "Newsy", icon: Newspaper },{ href: "/admin/sponsors", label: "Sponsorzy", icon: GalleryHorizontal },{ href: "/admin/rules", label: "Zasady", icon: BadgeHelp },{ href: "/admin/settings", label: "Ustawienia", icon: Settings }];
+export function AdminShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname(); const router = useRouter();
+  return <div className="min-h-screen bg-abyss text-zinc-100"><div className="grid min-h-screen md:grid-cols-[280px_1fr]"><aside className="border-r border-gold/10 bg-black/30 p-6"><p className="font-display text-2xl text-gold">Liga Pomścina</p><p className="mb-8 text-sm text-zinc-400">Panel administracyjny</p><nav className="space-y-2">{links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition ${pathname === href ? "border border-gold/30 bg-gold/10 text-gold" : "text-zinc-300 hover:bg-white/5 hover:text-gold"}`}><Icon className="h-4 w-4" />{label}</Link>)}</nav><button onClick={async () => { await signOutAdmin(); router.push("/admin/login"); }} className="mt-8 flex w-full items-center gap-3 rounded-2xl border border-rose-500/30 px-4 py-3 text-sm text-rose-300 transition hover:bg-rose-500/10"><LogOut className="h-4 w-4" />Wyloguj</button></aside><main className="p-4 md:p-8">{children}</main></div></div>;
+}
