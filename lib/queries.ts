@@ -144,33 +144,73 @@ export async function getStandings(seasonId?: string) {
   const safeMatches = matches ?? [];
 
   const standings: StandingRow[] = safePlayers.map((player: any) => {
-  let overall_points = 0;
-  let survival_points = 0;
-  let legion_points = 0;
-  let wins = 0;
-  let matches_played = 0;
-  const form: string[] = [];
-  const sc_form: string[] = [];
-  const td_form: string[] = [];
+    let overall_points = 0;
+    let survival_points = 0;
+    let legion_points = 0;
+    let wins = 0;
+    let matches_played = 0;
 
-  // ... reszta Twojej logiki
+    // Iterujemy po wszystkich rozegranych meczach i zliczamy statystyki gracza
+    for (const match of safeMatches) {
+      const participant = (match.participants ?? []).find(
+        (p: any) => p.player_id === player.id
+      );
 
-  return {
-    id: `${seasonId || "all"}-${player.id}`,
-    season_id: seasonId ?? "all",
-    player_id: player.id,
-    overall_points,
-    survival_points,
-    legion_points,
-    wins,
-    matches_played,
-    form,
-    sc_form,
-    td_form,
-    manual_override: false,
-    player,
-  };
-});
+      if (!participant) continue;
+
+      matches_played++;
+
+      const pts = Number(participant.points_awarded ?? 0);
+      overall_points += pts;
+
+      if (match.mode === "survival_chaos") {
+        survival_points += pts;
+        if (participant.placement === 1) wins++;
+      } else if (match.mode === "legion_td") {
+        legion_points += pts;
+        if (pts > 0) wins++;
+      }
+    }
+
+    // Formy per tryb (ostatnie 3 mecze każdego trybu) — używamy gotowej funkcji
+    const modeForms = buildModeForms(safeMatches, player.id);
+    const sc_form = modeForms.survival_chaos;
+    const td_form = modeForms.legion_td;
+
+    // Ogólna forma — ostatnie 5 meczów niezależnie od trybu
+    const recentPlayed = safeMatches
+      .filter((m) => m.status === "played")
+      .sort(
+        (a, b) =>
+          new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime()
+      );
+
+    const form: string[] = [];
+    for (const match of recentPlayed) {
+      if (form.length >= 5) break;
+      const participant = (match.participants ?? []).find(
+        (p: any) => p.player_id === player.id
+      );
+      const outcome = outcomeForParticipant(match, participant);
+      if (outcome) form.push(outcome);
+    }
+
+    return {
+      id: `${seasonId || "all"}-${player.id}`,
+      season_id: seasonId ?? "all",
+      player_id: player.id,
+      overall_points,
+      survival_points,
+      legion_points,
+      wins,
+      matches_played,
+      form,
+      sc_form,
+      td_form,
+      manual_override: false,
+      player,
+    };
+  });
 
   return standings.sort((a, b) => {
     if (b.overall_points !== a.overall_points) {
