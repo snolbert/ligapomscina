@@ -1,5 +1,6 @@
 import { Panel } from "@/components/ui/panel";
 import { formatDate } from "@/lib/utils";
+import { Download } from "lucide-react";
 
 function formatStatus(status: string) {
   if (status === "played") return "Played";
@@ -62,6 +63,17 @@ export function MatchCard({ match }: { match: any }) {
 
       {match.commentary ? (
         <p className="mt-4 text-sm text-zinc-400">{match.commentary}</p>
+      ) : null}
+
+      {match.replay_url ? (
+        <a
+          href={match.replay_url}
+          download
+          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2 text-sm text-gold transition hover:bg-gold/20"
+        >
+          <Download className="h-4 w-4" />
+          Pobierz powtórkę
+        </a>
       ) : null}
     </Panel>
   );

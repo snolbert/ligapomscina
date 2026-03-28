@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   deleteRecord,
   fetchMatchesAdmin,
@@ -8,8 +8,10 @@ import {
   upsertRecord,
   replaceParticipants,
 } from "@/lib/admin";
+import { createClient } from "@/lib/supabase/client";
 import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
+import { Upload, X } from "lucide-react";
 
 type Participant = {
   player_id: string;
@@ -86,6 +88,23 @@ export default function MatchesPage() {
   const [participants, setParticipants] = useState<Participant[]>([
     emptyParticipant,
   ]);
+  const [replayUploading, setReplayUploading] = useState(false);
+  const replayInputRef = useRef<HTMLInputElement>(null);
+
+  async function uploadReplay(file: File) {
+    setReplayUploading(true);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() ?? "w3g";
+      const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("replays").upload(path, file, { upsert: false });
+      if (error) { alert(error.message); return; }
+      const { data } = supabase.storage.from("replays").getPublicUrl(path);
+      setMatch((current) => ({ ...current, replay_url: data.publicUrl }));
+    } finally {
+      setReplayUploading(false);
+    }
+  }
 
   async function load() {
     const [matches, loadedPlayers, loadedSeasons, loadedRounds] =
@@ -279,20 +298,50 @@ export default function MatchesPage() {
             />
           </label>
 
-          <label className="grid gap-2 text-sm">
-            <span className="text-zinc-300">Replay URL</span>
+          <div className="grid gap-2 text-sm">
+            <span className="text-zinc-300">Powtórka</span>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={match.replay_url}
+                onChange={(e) =>
+                  setMatch((current) => ({ ...current, replay_url: e.target.value }))
+                }
+                placeholder="URL lub wgraj plik poniżej"
+                className="flex-1 rounded-2xl border border-gold/20 bg-black/20 px-4 py-3"
+              />
+              {match.replay_url && (
+                <button
+                  type="button"
+                  title="Usuń powtórkę"
+                  onClick={() => setMatch((current) => ({ ...current, replay_url: "" }))}
+                  className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-3 text-rose-300 hover:bg-rose-500/20"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <input
-              type="text"
-              value={match.replay_url}
-              onChange={(e) =>
-                setMatch((current) => ({
-                  ...current,
-                  replay_url: e.target.value,
-                }))
-              }
-              className="rounded-2xl border border-gold/20 bg-black/20 px-4 py-3"
+              ref={replayInputRef}
+              type="file"
+              accept=".w3g,.nwg,.w3m,.zip"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) await uploadReplay(file);
+                if (replayInputRef.current) replayInputRef.current.value = "";
+              }}
             />
-          </label>
+            <button
+              type="button"
+              disabled={replayUploading}
+              onClick={() => replayInputRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-2xl border border-gold/20 bg-black/20 px-4 py-3 text-zinc-300 hover:bg-gold/10 disabled:opacity-50"
+            >
+              <Upload className="h-4 w-4" />
+              {replayUploading ? "Wysyłanie…" : "Wgraj plik powtórki (.w3g)"}
+            </button>
+          </div>
 
           <label className="grid gap-2 text-sm">
             <span className="text-zinc-300">Wideo URL</span>
